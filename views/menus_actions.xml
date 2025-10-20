@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- Root menu (container) -->
+  <menuitem id="menu_cm_root"
+            name="CM Imports"
+            sequence="80"
+            groups="base.group_user"/>
+
+  <menuitem id="menu_master_import"
+            name="Master Import"
+            parent="menu_cm_root"
+            action="action_cm_master_import_wizard"
+            sequence="32"
+            groups="base.group_user"/>
+
+
+</odoo>

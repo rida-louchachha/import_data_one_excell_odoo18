@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- Hub form view -->
+  <record id="view_cm_import_center_form" model="ir.ui.view">
+    <field name="name">cm.import.center.form</field>
+    <field name="model">cm.import.center</field>
+    <field name="arch" type="xml">
+      <form string="CM Imports">
+        <sheet>
+          <group>
+            <field name="note" nolabel="1" readonly="1"/>
+          </group>
+
+          <group string="Import menus">
+            <group>
+
+              <button type="action"
+                      name="%(action_cm_master_import_wizard)d"
+                      class="btn-link"
+                      string="Master Import (All Sheets)"/>
+            </group>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_cm_import_center" model="ir.actions.act_window">
+    <field name="name">CM Imports</field>
+    <field name="res_model">cm.import.center</field>
+    <field name="view_mode">form</field>
+    <field name="context">{}</field>
+    <field name="groups_id" eval="[(4, ref('base.group_user'))]"/>
+  </record>
+
+  <menuitem id="menu_cm_root"
+            name="CM Imports"
+            parent="base.menu_custom"
+            groups="base.group_user"
+            sequence="90"
+            action="action_cm_import_center"/>
+
+
+
+
+</odoo>
