@@ -3,7 +3,7 @@
     "name": "Import Wizards Caisse Manager",
     "summary": "Two-step Excel import (Test → Import) for Categories ,Products, Locations, and Bills of Materials",
     "version": "18.0.2.0.0",
-    "author": "Rida Louchachha",
+    "author": "Rida Louchachha <ridalouchachha2580@gmail.com>",
     "category": "Manufacturing/Inventory",
     "license": "LGPL-3",
     "depends": [
