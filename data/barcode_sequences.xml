@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="seq_cm_barcode_raw" model="ir.sequence">
+    <field name="name">CM Barcode MP</field>
+    <field name="code">cm.barcode.raw</field>
+    <field name="prefix">MP</field>
+    <field name="padding">8</field>
+    <field name="implementation">no_gap</field>
+  </record>
+
+  <record id="seq_cm_barcode_finished" model="ir.sequence">
+    <field name="name">CM Barcode Finished</field>
+    <field name="code">cm.barcode.finished</field>
+    <field name="prefix">PF</field>
+    <field name="padding">8</field>
+    <field name="implementation">no_gap</field>
+  </record>
+</odoo>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <!-- Default category for semi-finished (fabricated) products.
+       This is created at module install and used as the default
+       category during imports when no category is provided. -->
+  <record id="category_semi_finished_cm" model="product.category">
+    <field name="name">Produits semi-finis</field>
+  </record>
+</odoo>

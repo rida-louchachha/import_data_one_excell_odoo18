@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <!-- =========================================================
+       1) MASTER (all-sheets) wizard view + action
+     ========================================================= -->
+      <record id="view_cm_master_import_wizard" model="ir.ui.view">
+    <field name="name">cm.master.import.wizard.form</field>
+    <field name="model">cm.master.import.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Master Import (All Sheets)">
+        <!-- Header banner with nicer outer margin -->
+        <div class="alert alert-info" role="alert"
+             style="margin:16px; border-radius:12px; display:flex; gap:12px; align-items:center;">
+          <i class="fa fa-cloud-upload" style="font-size:22px;"></i>
+          <div>
+            <strong>Master Import Wizard</strong><br/>
+            Import your product data and (optionally) images in one smooth flow.
+          </div>
+        </div>
+
+        <!-- generous padding around the form area -->
+        <sheet class="o_form_sheet" style="padding:0 18px 18px 18px;">
+          <notebook class="o_notebook" style="margin-top:8px;">
+
+            <!-- ====================== IMAGES TAB ====================== -->
+            <page string="Images" name="tab_images">
+              <group col="1" string="Image Repository" style="margin-top:6px;">
+                <!-- top row: left fields + right CTA -->
+                <div style="display:flex; gap:16px; align-items:end; flex-wrap:wrap;">
+                  <div style="flex:1 1 420px; min-width:320px;">
+                    <label for="has_local_images" string="Use images in product?" class="o_form_label"/>
+                    <field name="has_local_images"/>
+
+                    <div invisible="not has_local_images" style="margin-top:10px;">
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <label for="image_zip" string="Images ZIP (or directory pack)" class="o_form_label"/>
+                        <!-- small rule badge -->
+                        <span class="badge rounded-pill"
+                              style="background:#6f42c1; color:#fff; font-weight:600;">
+                          Image value = exact filename
+                        </span>
+                      </div>
+
+                      <field name="image_zip"
+                             filename="image_zip_filename"
+                             required="has_local_images"
+                             placeholder="Select a .zip containing your images…"/>
+
+                      <div class="text-muted"
+                           style="font-size:12px; margin-top:6px; line-height:1.35;"
+                           invisible="not has_local_images">
+                        Place all images in a ZIP. They will be copied to
+                        <code>static/import_images/</code> in your module.
+                        <br/>
+                        <strong>In your Excel, the “Image” column must contain the exact file name</strong>
+                        (no folders, no URLs), for example:
+                        <code>background.png</code>, <code>product-123.jpg</code>, <code>banner.webp</code>.
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- right aligned CTA -->
+                  <div style="flex:0 0 auto; margin-left:auto; text-align:right;"
+                       invisible="not has_local_images or not image_zip">
+                    <button name="action_import_image_repo"
+                            type="object"
+                            string="Import Image Repo"
+                            icon="fa-upload"
+                            class="btn btn-outline-success"
+                            style="border-radius:12px; padding:10px 16px; font-weight:600;"/>
+                    <div class="text-muted" style="font-size:12px; margin-top:6px;">
+                      Upload &amp; stage images into your module.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- result card: show if user enabled images OR we already have a report -->
+                <div class="card" style="margin-top:16px; border-radius:12px;"
+                     invisible="not has_local_images and not image_repo_report">
+                  <div class="card-body">
+                    <span class="o_stat_info" style="display:block; margin-bottom:8px; font-weight:600;">
+                      Image Import Report
+                    </span>
+                    <field name="image_repo_report" widget="html" nolabel="1" readonly="1"/>
+                  </div>
+                </div>
+              </group>
+            </page>
+
+            <!-- ====================== EXCEL TAB ====================== -->
+            <page string="Excel File" name="tab_excel">
+              <group col="2">
+                <group>
+                  <label for="file" string="Excel File of type(.xlsx)" class="o_form_label"/>
+                  <field name="file" filename="filename" placeholder="Select the master Excel template…"/>
+                  <field name="filename" invisible="1"/>
+                  <div class="text-muted" style="font-size:12px; margin-top:6px; line-height:1.35;">
+                    <strong>Important:</strong> In the <em>Image</em> column, write the
+                    <strong>exact filename with extension</strong> (no path, no URL), e.g.
+                    <code>background.png</code>, <code>image.jpg</code>, <code>photo.webp</code>.
+                  </div>
+                </group>
+
+                <group>
+                  <div class="card" style="border-radius:12px;">
+                    <div class="card-body" style="padding:12px;">
+                      <div style="display:flex; gap:16px; align-items:center;">
+                        <div>
+                          <i class="fa fa-check-circle"
+                             style="color:#28a745; font-size:20px;"
+                             invisible="not tested_ok"/>
+                          <i class="fa fa-exclamation-triangle"
+                             style="color:#ffc107; font-size:20px;"
+                             invisible="tested_ok"/>
+                        </div>
+                        <div>
+                          <div><strong>Status</strong></div>
+                          <div class="text-muted" style="font-size:12px;">
+                            Lines: <field name="line_count" readonly="1" class="o_inline"/>
+                            &amp;nbsp;&amp;nbsp; Errors:
+                            <span style="font-weight:600;">
+                              <field name="error_count" readonly="1" class="o_inline"/>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </group>
+              </group>
+
+              <separator string="Validation Log" style="margin-top:10px;"/>
+              <group>
+                <field name="log_text" nolabel="1" readonly="1" widget="text"
+                       placeholder="Run Test Master to validate your file…"/>
+              </group>
+            </page>
+
+            <!-- ====================== PREVIEWS TAB ====================== -->
+            <page string="Previews" name="tab_previews">
+              <group>
+                <div class="card" style="border-radius:12px;">
+                  <div class="card-body">
+                    <field name="log_preview_html" widget="html" nolabel="1" readonly="1"/>
+                  </div>
+                </div>
+              </group>
+            </page>
+
+          </notebook>
+        </sheet>
+
+        <!-- Footer actions -->
+        <footer>
+          <div style="width:100%; display:flex; gap:8px; align-items:center;">
+            <div style="margin-right:auto;">
+              <button name="action_download_master_template"
+                      string="Download Master Template"
+                      type="object"
+                      class="btn btn-link"/>
+            </div>
+
+            <button name="action_test_master"
+                    string="Test Master"
+                    type="object"
+                    class="btn btn-secondary"/>
+
+            <button name="action_import_master"
+                    string="Import Master"
+                    type="object"
+                    class="btn"
+                    style="background:#6f42c1; color:#fff; border-radius:10px; font-weight:600;"
+                    invisible="not tested_ok"/>
+            <button string="Close" class="btn btn-link" special="cancel"/>
+          </div>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_cm_master_import_wizard" model="ir.actions.act_window">
+    <field name="name">Master Import (All Sheets)</field>
+    <field name="res_model">cm.master.import.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+
+
+
+    <record id="action_cm_master_import_wizard" model="ir.actions.act_window">
+      <field name="name">Master Import (All Sheets)</field>
+      <field name="res_model">cm.master.import.wizard</field>
+      <field name="view_mode">form</field>
+      <field name="target">new</field>
+    </record>
+
+
+    <!-- =========================================================
+         3) Server action so the old wizard can open the new one
+       ========================================================= -->
+    <record id="srv_open_cm_master_import_wizard" model="ir.actions.server">
+      <field name="name">Open Master Import Wizard</field>
+      <field name="model_id" ref="base.model_res_users"/>
+      <field name="state">code</field>
+      <field name="code">
+        action = env['cm.master.import.wizard'].action_open_master_wizard()
+      </field>
+    </record>
+
+
+</odoo>
