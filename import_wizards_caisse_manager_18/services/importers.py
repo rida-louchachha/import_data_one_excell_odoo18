@@ -32,12 +32,8 @@ def _next_from_sequence(env, code):
 
 def import_products(env, records, sheet_key):
     """
-    Import products for product.raw / product.semi_finished (and product.finished if you add it).
-    - Reads: name, list_price (or standard_price), uom, category
-    - Resolves UoM via R.uom_by_name
-    - Resolves Category by exact name, then ilike (does NOT auto-create)
-    - Applies per-sheet defaults for type/sale_ok/purchase_ok/available_in_pos
-    - Handles barcode mode for product.raw (auto / manuel / aucun)
+    Import products for product.raw / product.semi_finished / product.finished.
+    Also resolves UoM & Category reliably from many possible column aliases.
     """
     PT = env["product.template"]
     PC = env["product.category"]
@@ -56,41 +52,62 @@ def import_products(env, records, sheet_key):
         except Exception:
             return default
 
+    def _pick(vals, *keys):
+        # first present & non-empty match
+        for k in keys:
+            v = vals.get(k)
+            if v not in (None, ""):
+                return v
+        return ""
+
+    def _resolve_category(cat_name_raw):
+        name = _s(cat_name_raw)
+        if not name:
+            return None
+        # exact first, then ilike
+        return PC.search([("name", "=", name)], limit=1) or PC.search([("name", "ilike", name)], limit=1)
+
+    def _resolve_uom(uom_name_raw):
+        name = _s(uom_name_raw)
+        return R.uom_by_name(env, name) if name else None
+
     for vals in records:
         name = _s(vals.get("name"))
         if not name:
             continue
 
-        # --- resolve fields coming from Excel ---
         # price: accept list_price or standard_price
         price = _f(vals.get("list_price"), None)
         if price is None:
             price = _f(vals.get("standard_price"), 0.0)
 
-        # UoM (try several keys)
-        uom_name = _s(vals.get("uom") or vals.get("uom_name") or vals.get("uom_id"))
-        uom = R.uom_by_name(env, uom_name) if uom_name else None
+        # UoM aliases commonly seen from collectors/templates
+        uom_name = _s(_pick(
+            vals,
+            "uom", "uom_name", "uom_id", "uom_label", "uom (name)",
+            "Unité", "unite", "unité"
+        ))
+        uom = _resolve_uom(uom_name)
 
-        # Category (try several keys). Do NOT create; just link if found.
-        cat_name = _s(vals.get("category") or vals.get("categ_name") or vals.get("categ"))
-        categ = None
-        if cat_name:
-            categ = PC.search([("name", "=", cat_name)], limit=1) \
-                    or PC.search([("name", "ilike", cat_name)], limit=1)
+        # Category aliases commonly seen
+        cat_name = _s(_pick(
+            vals,
+            "category", "category_name", "category_label",
+            "categ", "categ_name", "categ_label",
+            "Catégorie", "categorie", "catégorie"
+        ))
+        categ = _resolve_category(cat_name)
 
-        # --- per-sheet defaults (types & flags) ---
-        # Adjust to your business rules if needed.
+        # per-sheet defaults
         defaults = {}
         if sheet_key == "product.raw":
-            # Raw materials are storable, purchasable, not sold
             defaults.update({
-                "type": "consu",
+                "type": "consu",         # or "product" if you stock MP physically
                 "purchase_ok": True,
                 "sale_ok": False,
-                "is_storable": True,
+                "available_in_pos": False,
             })
         elif sheet_key == "product.semi_finished":
-            # Semi-finished: consumable, not sold, not purchasable, not in PoS
             defaults.update({
                 "type": "consu",
                 "sale_ok": False,
@@ -98,42 +115,44 @@ def import_products(env, records, sheet_key):
                 "available_in_pos": False,
             })
         elif sheet_key == "product.finished":
-            # If you ever import finished products here:
             defaults.update({
-                "type": "consu",
+                "type": "consu",         # change to "product" if you stock finished goods
                 "sale_ok": True,
                 "purchase_ok": False,
                 "available_in_pos": True,
             })
 
-        # --- build data dict (uom & category included) ---
         data = {
             "name": name,
-            # If your column is a COST, keep standard_price; if it's a selling price, use list_price.
-            # Many templates store cost for raw/semi; set both to keep life simple.
+            # you can split cost vs sale price by sheet if needed
             "standard_price": price,
             "list_price": price,
-            "is_storable": True,
         }
         if uom:
             data["uom_id"] = uom.id
             data["uom_po_id"] = uom.id
+        else:
+            if uom_name:
+                details.append(f"{name}: UoM introuvable -> '{uom_name}' (inchangé)")
         if categ:
             data["categ_id"] = categ.id
+        else:
+            if cat_name:
+                details.append(f"{name}: Catégorie introuvable -> '{cat_name}' (inchangée)")
 
         data.update(defaults)
 
-        # find/create template
+        # find/create and write
         tmpl = PT.search([("name", "=", name)], limit=1) or PT.search([("name", "ilike", name)], limit=1)
         if tmpl:
             tmpl.write(data); updated += 1
         else:
             tmpl = PT.create(data); created += 1
 
-        # --- barcode logic only for MP (raw) ---
+        # barcode logic only for MP (raw)
         if sheet_key == "product.raw":
-            mode = _s(vals.get("barcode_mode") or vals.get("barcode mode") or vals.get("mode")).lower()
-            manual = _s(vals.get("barcode_manual") or vals.get("barcode manual"))
+            mode = _s(_pick(vals, "barcode_mode", "barcode mode", "mode")).lower()
+            manual = _s(_pick(vals, "barcode_manual", "barcode manual"))
             new_barcode = None  # None = don't touch; False = clear
 
             if mode == "auto":
