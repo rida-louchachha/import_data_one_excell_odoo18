@@ -125,7 +125,7 @@ class CmMasterImportWizard(models.TransientModel):
         using ONLY the typed text of the Image column.
         """
         required = set()
-        for sheet_key in ("product.raw", "product.semi_finished"):
+        for sheet_key in ("product.raw", "product.semi_finished", "product.finished"):
             title = C.SHEET_TITLES.get(sheet_key, sheet_key)
             if title not in wb.sheetnames:
                 continue
@@ -278,7 +278,7 @@ class CmMasterImportWizard(models.TransientModel):
             from openpyxl import load_workbook as _lb
             from openpyxl.comments import Comment
             wb = _lb(BytesIO(content))
-            for sheet_key in ("product.raw", "product.semi_finished"):
+            for sheet_key in ("product.raw", "product.semi_finished", "product.finished"):
                 title = C.SHEET_TITLES.get(sheet_key, sheet_key)
                 if title in wb.sheetnames:
                     ws = wb[title]
@@ -347,7 +347,7 @@ class CmMasterImportWizard(models.TransientModel):
                 continue
 
             # Check Image column (typed text only)
-            if sheet_key in ("product.raw", "product.semi_finished"):
+            if sheet_key in ("product.raw", "product.semi_finished", "product.finished"):
                 img_col_idx = (hmap.get("image") or hmap.get("Image") or hmap.get("image_embed"))
                 if img_col_idx is not None:
                     for i, row in enumerate(body, start=2):
@@ -476,7 +476,7 @@ class CmMasterImportWizard(models.TransientModel):
                 c, u, det = IMP.import_products(self.env, records, sheet_key)
 
                 # --- image setting from filename only ---
-                if sheet_key in ("product.raw", "product.semi_finished"):
+                if sheet_key in ("product.raw", "product.semi_finished", "product.finished"):
                     img_col_idx = (hmap.get("image") or hmap.get("Image") or hmap.get("image_embed"))
                     name_col_idx = hmap.get("name")
                     if img_col_idx is not None and name_col_idx is not None:

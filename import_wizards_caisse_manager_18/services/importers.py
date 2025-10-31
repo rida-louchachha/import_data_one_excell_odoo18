@@ -102,7 +102,7 @@ def import_products(env, records, sheet_key):
         defaults = {}
         if sheet_key == "product.raw":
             defaults.update({
-                "type": "consu",         # or "product" if you stock MP physically
+                "type": "consu",
                 "purchase_ok": True,
                 "sale_ok": False,
                 "available_in_pos": False,
@@ -116,7 +116,7 @@ def import_products(env, records, sheet_key):
             })
         elif sheet_key == "product.finished":
             defaults.update({
-                "type": "consu",         # change to "product" if you stock finished goods
+                "type": "consu",
                 "sale_ok": True,
                 "purchase_ok": False,
                 "available_in_pos": True,
@@ -124,9 +124,9 @@ def import_products(env, records, sheet_key):
 
         data = {
             "name": name,
-            # you can split cost vs sale price by sheet if needed
             "standard_price": price,
             "list_price": price,
+            "is_storable": True,
         }
         if uom:
             data["uom_id"] = uom.id

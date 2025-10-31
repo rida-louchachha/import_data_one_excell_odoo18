@@ -16,7 +16,7 @@ BOM_TYPE_CHOICES = ["normal", "phantom", "subcontracting"]
 BOM_TYPES = set(BOM_TYPE_CHOICES)
 
 # 3-state values for Excel
-BARCODE_MODES = ["Auto", "Manuel", "Aucun"]  # show these in the dropdown
+BARCODE_MODES = ["Auto", "Manuel", "Aucun"]
 
 HEADER_LABELS = {
     "product.category": [
@@ -53,6 +53,13 @@ HEADER_LABELS = {
         ("component_name",   _("Nom composant")),
         ("component_qty",    _("Quantité composant")),
         ("component_uom",    _("Unité composant")),
+    ],
+    "product.finished": [
+        ("name",        _("Nom du produit")),
+        ("uom_name",    _("Unité")),
+        ("list_price",  _("Prix")),
+        ("category_name", _("Catégorie")),
+        ("image_embed", _("Image (insérer PNG/JPG)")),
     ],
 
     # Finished BoM (barcode mode on the header row of the merged block)
@@ -111,6 +118,13 @@ HEADER_ALIASES = {
         "component_qty": ["Quantité composant", "Qté composant"],
         "component_uom": ["Unité composant", "UoM composant"],
     },
+    "product.finished": {
+        "name": ["Nom du produit", "Nom produit fini"],
+        "uom_name": ["Unité", "UoM", "Unité de mesure"],
+        "list_price": ["Prix", "Prix de vente"],
+        "category_name": ["Catégorie", "Catégorie produit"],
+        "image_embed": ["Image (insérer PNG/JPG)", "Image", "Image URL", "Image Path"],
+    },
     "mrp.bom.finished": {
         "bom_product_name": ["Produit fini (nom)", "Nom produit fini"],
         "barcode_mode": [
@@ -141,6 +155,7 @@ SHEET_TITLES = {
     "product.raw": "Produits – MP",
     "product.semi_finished": "Produits – Semi-finis",
     "mrp.bom.semi_finished": "Nomenclatures – Semi-finis",
+    "product.finished": "Produits – Finis",
     "mrp.bom.finished": "Nomenclatures – Finis",
     "stock.location": "Emplacements",
 }
@@ -150,6 +165,7 @@ SHEET_IMPORT_ORDER = [
     "product.raw",
     "product.semi_finished",
     "mrp.bom.semi_finished",
+    "product.finished",
     "mrp.bom.finished",
     "stock.location",
 ]

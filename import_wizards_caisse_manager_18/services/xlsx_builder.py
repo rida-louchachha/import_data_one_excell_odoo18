@@ -200,8 +200,8 @@ def build_master_template(env):
             next_hcol = len(headers)
             u0 = uom_names[0] if uom_names else ""
 
-            # ------------------ PRODUCTS (MP & semi-finis) ------------------
-            if sheet_key in ("product.raw", "product.semi_finished"):
+            # ------------------ PRODUCTS (MP & semi-finis & Finished) ------------------
+            if sheet_key in ("product.raw", "product.semi_finished", "product.finished"):
                 # Example row on every sheet (row 2)
                 if sheet_key == "product.semi_finished":
                     cat_default = semi_cat_name or (existing_categories[0] if existing_categories else "")
@@ -214,6 +214,11 @@ def build_master_template(env):
                 else:
                     # name, uom, price, cat, image
                     ws.write_row(1, 0, ["Produit A", u0, "199.99", cat_default, ""], fmt_unlocked)
+
+                if sheet_key == "product.finished":
+                    ws.write_row(1, 0, ["Produit Finished 1", u0, "199.99", cat_default, ""], fmt_unlocked)
+                else:
+                    ws.write_row(1, 0, ["Produit Finished 1", u0, "199.99", cat_default, ""], fmt_unlocked)
 
                 # UoM dropdown (all rows, col=1)
                 if uom_names:
@@ -401,7 +406,7 @@ def build_master_template(env):
                 u0 = (uom_names[0] if uom_names else "")
                 comp0 = (component_variants[0] if component_variants else "Composant A")
                 # cols: 0 prod, 1 barcode_mode, 2 barcode_manual, 3 code, 4 qty, 5 uom, 6 type, 7 comp, 8 c_qty, 9 c_uom
-                example = [p0, "Auto", "", "BOM-001", "1", u0, "phantom", comp0, "2", u0]
+                example = [p0, "", "", "BOMF-001", "1", u0, "phantom", comp0, "2", u0]
                 ws.write_row(START_ROW, 0, example, fmt_unlocked)
 
                 # Merge ONLY the example header block across rows 2.. for A..F (0..5)
@@ -457,16 +462,24 @@ def build_master_template(env):
                 next_hcol += 1
 
                 # Finished product selector on ALL rows (col=0)
+                finished_sheet = C.SHEET_TITLES["product.finished"]
+
+                existing_n = len(pos_finished_variants)
                 _helper_fill_column(ws, next_hcol, pos_finished_variants)
+
+                # Mirror entries typed in the "Produits – Finis" tab (column A)
+                for j in range(1, MAX_ROWS + 1):
+                    ws.write_formula(existing_n + j, next_hcol, _mirror_or_blank(finished_sheet, "A", j + 1))
+
+                # Validation covers: DB finished products + MAX_ROWS newly typed finished products
                 ws.data_validation(1, 0, MAX_ROWS, 0, {
                     'validate': 'list',
-                    'source': f"${colname(next_hcol)}$1:${colname(next_hcol)}${max(1, len(pos_finished_variants))}",
+                    'source': f"${colname(next_hcol)}$1:${colname(next_hcol)}${max(1, existing_n + MAX_ROWS)}",
                     'ignore_blank': False, 'error_type': 'stop',
                     'error_title': 'Produit fini invalide',
-                    'error_message': "Choisissez un produit fini PoS existant.",
+                    'error_message': "Choisissez un produit fini existant ou saisi dans l’onglet Produits – Finis.",
                 })
                 next_hcol += 1
-
                 # Components (col=7) = ALL DB products + mirror of RAW + mirror of SEMI-FINISHED
                 raw_sheet  = C.SHEET_TITLES["product.raw"]
                 semi_sheet = C.SHEET_TITLES["product.semi_finished"]
@@ -585,10 +598,15 @@ def build_master_template(env):
                 p0 = semi_finished_variants[0] if semi_finished_variants else "Produit Semi-fini A"
                 comp0 = raw_variants[0] if raw_variants else "Matière Première A"
                 ex = [p0, "BOM-001", "1", u0, "normal", comp0, "2", u0]
+            elif key == "product.finished":
+                u0 = (uom_names[0] if uom_names else "")
+                c_default = existing_categories[0] if existing_categories else ""
+                ex = ["Produit Finished 1", u0, "199.99", c_default, ""]
+
             elif key == "mrp.bom.finished":
                 u0 = (uom_names[0] if uom_names else "")
                 comp0 = (component_variants[0] if component_variants else "Composant A")
-                ex = ["Produit Fini A", "Auto", "", "BOM-001", "1", u0, "phantom", comp0, "2", u0]
+                ex = ["Produit Fini A", "Auto", "", "BOMF-001", "1", u0, "phantom", comp0, "2", u0]
             else:
                 ex = ["Test", "WH", "internal"]
 
