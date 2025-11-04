@@ -1,4 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cm_import_wizard_user,access_cm_import_wizard_user,model_cm_import_wizard,base.group_user,1,1,1,1
 access_cm_import_center_user,access_cm_import_center_user,model_cm_import_center,base.group_user,1,1,1,1
 access_cm_master_import_wizard_user,access_cm_master_import_wizard_user,model_cm_master_import_wizard,base.group_user,1,1,1,1

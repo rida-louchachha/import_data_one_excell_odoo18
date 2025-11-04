@@ -406,7 +406,7 @@ def build_master_template(env):
                 u0 = (uom_names[0] if uom_names else "")
                 comp0 = (component_variants[0] if component_variants else "Composant A")
                 # cols: 0 prod, 1 barcode_mode, 2 barcode_manual, 3 code, 4 qty, 5 uom, 6 type, 7 comp, 8 c_qty, 9 c_uom
-                example = [p0, "", "", "BOMF-001", "1", u0, "phantom", comp0, "2", u0]
+                example = [p0, "Auto", "", "BOM-001", "1", u0, "phantom", comp0, "2", u0]
                 ws.write_row(START_ROW, 0, example, fmt_unlocked)
 
                 # Merge ONLY the example header block across rows 2.. for A..F (0..5)
@@ -521,15 +521,26 @@ def build_master_template(env):
                 # Example row (row 2)
                 ws.write_row(1, 0, ["Test", "WH", "internal"], fmt_unlocked)
 
+                # Build Parent list = DB parents + mirror of names typed in column A of this same sheet
+                existing_n = len(parent_loc_names)
                 if parent_loc_names:
-                    _helper_fill_column(ws, next_hcol, parent_loc_names)
+                    _helper_fill_column(ws, next_hcol, parent_loc_names)  # hidden helper column
+
+                    # Mirror A2..A{MAX_ROWS+1} from THIS sheet ('title'), turning blanks into ""
+                    for j in range(1, MAX_ROWS + 1):
+                        ws.write_formula(existing_n + j, next_hcol, _mirror_or_blank(title, "A", j + 1))
+
+                    # Validate column B (Parent) against the combined helper range
                     ws.data_validation(1, 1, MAX_ROWS, 1, {
                         'validate': 'list',
-                        'source': f"${colname(next_hcol)}$1:${colname(next_hcol)}${len(parent_loc_names)}",
+                        'source': f"${colname(next_hcol)}$1:${colname(next_hcol)}${max(1, existing_n + MAX_ROWS)}",
                         'ignore_blank': True, 'error_type': 'stop',
                         'error_title': 'Parent invalide',
                         'error_message': 'Choisissez un parent de la liste.',
                     })
+                    next_hcol += 1
+
+                # Usage dropdown (unchanged)
                 ws.data_validation(1, 2, MAX_ROWS, 2, {
                     'validate': 'list',
                     'source': C.USAGE_CHOICES,
@@ -543,7 +554,6 @@ def build_master_template(env):
                     for cc in range(0, len(headers)):
                         ws.write_blank(rr - 1, cc, None, border_unlocked)
                 return ws
-
         # Build all sheets
         for key in C.SHEET_IMPORT_ORDER:
             _build_sheet(key)
@@ -614,9 +624,7 @@ def build_master_template(env):
                 cell = ws.cell(row=2, column=c, value=v)
                 cell.protection = Protection(locked=False)
 
-            # Hide BoM type columns and prefill defaults on ALL rows
             if key == "mrp.bom.semi_finished":
-                # type column is 5th (A=1): index 5 => zero-based 4
                 col_letter = get_column_letter(5)
                 ws.column_dimensions[col_letter].hidden = True
                 for r in range(2, MAX_ROWS + 1):
@@ -634,4 +642,3 @@ def build_master_template(env):
     content = output.getvalue()
     output.close()
     return "Modele_Master_Import.xlsx", content
-
